@@ -26,6 +26,16 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 //  SOFTWARE.
 //
+//
+//  GZIP
+//  Copyright (c) 2012 Charcoal Design
+//  https://github.com/nicklockwood/GZIP
+//
+//
+//  Image with mask, color at pixel
+//  Copyright (c) 2009 Ole Begemann
+//  https://github.com/ole/OBShapedButton
+//
 
 #pragma mark - Debug
 
@@ -147,24 +157,12 @@
 #pragma mark - GDC
 
 #define dispatch_sync_main_safe(block)\
-    if ([NSThread isMainThread])\
-    {\
-        block();\
-    }\
-    else\
-    {\
-        dispatch_sync(dispatch_get_main_queue(), block);\
-    }\
+if ([NSThread isMainThread]) { block(); }\
+else { dispatch_sync(dispatch_get_main_queue(), block); }
 
 #define dispatch_async_main_safe(block)\
-    if ([NSThread isMainThread])\
-    {\
-        block();\
-    }\
-    else\
-    {\
-        dispatch_async(dispatch_get_main_queue(), block);\
-    }\
+if ([NSThread isMainThread]) { block(); }\
+else { dispatch_async(dispatch_get_main_queue(), block); }\
 
 #define dispatch_sync_main(block)   dispatch_sync(dispatch_get_main_queue(), block)
 #define dispatch_async_main(block)  dispatch_async(dispatch_get_main_queue(), block)
@@ -338,7 +336,7 @@
 // #if __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_7_0
 // #endif
 
-// #if __IPHONE_OS_VERSION_MAX_REQUIRED < __IPHONE_8_0
+// #if __IPHONE_OS_VERSION_MAX_ALLOWED < __IPHONE_8_0
 // #endif
 
 #pragma mark - Enum
@@ -374,29 +372,17 @@
 
 #import <UIKit/UIKit.h>
 
-/** Need to determine internet status */
-#import "Reachability.h"
-
 /** Need to send email and sms */
 @import MessageUI;
 
 /** Need to open addresses and coorinates on map */
 @import MapKit;
 
-typedef enum
+typedef NS_ENUM(NSUInteger, LGImageScalingMode)
 {
-    LGImageScalingModeAspectFill,
-    LGImageScalingModeAspectFit
-}
-LGImageScalingMode;
-
-typedef enum
-{
-    LGInternetStatusOff  = 0,
-    LGInternetStatusWiFi = 1,
-    LGInternetStatusWWAN = 2
-}
-LGInternetStatus;
+    LGImageScalingModeAspectFill = 0,
+    LGImageScalingModeAspectFit  = 1
+};
 
 #define LGHelperShared [LGHelper sharedHelper]
 
@@ -428,6 +414,7 @@ LGInternetStatus;
 
 + (UIView *)superviewForView:(UIView *)view withClass:(Class)superViewClass;
 + (UIView *)firstResponderInView:(UIView *)view;
++ (BOOL)isViewEditing:(UIView *)view;
 
 #pragma mark - UIScrollView
 
@@ -474,18 +461,12 @@ LGInternetStatus;
 + (UIImage *)screenshotMakeInPixels:(BOOL)inPixels;
 + (UIImage *)screenshotMakeOfView:(UIView *)view inPixels:(BOOL)inPixels;
 
-#pragma mark - Reachability
-
-+ (Reachability *)reachabilityAddObserver:(id)target selector:(SEL)selector;
-+ (Reachability *)reachabilityForHostName:(NSString *)hostName addObserver:(id)target selector:(SEL)selector;
-+ (void)reachability:(Reachability *)reachability removeObserver:(id)target;
-+ (NetworkStatus)reachabilityStatus;
-+ (NetworkStatus)reachabilityStatusForHostName:(NSString *)hostName;
-
 #pragma mark - Keyboard Notifications
 
 + (void)keyboardNotificationsAddToTarget:(id)target selector:(SEL)selector;
 + (void)keyboardNotificationsRemoveFromTarget:(id)target selector:(SEL)selector;
++ (void)keyboardNotificationsAddToScrollView:(UIScrollView *)scrollView;
++ (void)keyboardNotificationsRemoveFromScrollView:(UIScrollView *)scrollView;
 + (void)keyboardAnimateWithNotificationUserInfo:(NSDictionary *)notificationUserInfo animations:(void(^)(CGFloat keyboardHeight))animations;
 
 #pragma mark - Disk capacity
@@ -507,10 +488,39 @@ LGInternetStatus;
 + (NSString *)md5HashFromData:(NSData *)data;
 + (NSString *)md5HashFromString:(NSString *)string;
 
-#pragma mark - SHA1 hash
+#pragma mark - SHA hash
 
 + (NSString *)sha1HashFromData:(NSData *)data;
++ (NSString *)sha224HashFromData:(NSData *)data;
++ (NSString *)sha256HashFromData:(NSData *)data;
++ (NSString *)sha384HashFromData:(NSData *)data;
++ (NSString *)sha512HashFromData:(NSData *)data;
+
 + (NSString *)sha1HashFromString:(NSString *)string;
++ (NSString *)sha224HashFromString:(NSString *)string;
++ (NSString *)sha256HashFromString:(NSString *)string;
++ (NSString *)sha384HashFromString:(NSString *)string;
++ (NSString *)sha512HashFromString:(NSString *)string;
+
+#pragma mark - XOR Crypto
+
++ (NSData *)xorCryptedData:(NSData *)data key:(NSString *)key;
++ (NSString *)xorCryptedString:(NSString *)string key:(NSString *)key;
+
+#pragma mark - AES Crypto
+
++ (NSData *)aes128EncryptedData:(NSData *)data key:(NSString *)key;
++ (NSData *)aes128DecryptedData:(NSData *)data key:(NSString *)key;
++ (NSData *)aes192EncryptedData:(NSData *)data key:(NSString *)key;
++ (NSData *)aes192DecryptedData:(NSData *)data key:(NSString *)key;
++ (NSData *)aes256EncryptedData:(NSData *)data key:(NSString *)key;
++ (NSData *)aes256DecryptedData:(NSData *)data key:(NSString *)key;
+
+#pragma mark - GZIP
+
++ (NSData *)gZippedData:(NSData *)data compressionLevel:(float)level;
++ (NSData *)gZippedData:(NSData *)data;
++ (NSData *)gUnZippedData:(NSData *)data;
 
 #pragma mark - Open URL's
 
@@ -590,7 +600,7 @@ LGInternetStatus;
 
 + (BOOL)emailIsCorrect:(NSString *)string;
 
-/** 
+/**
  Return NO if device can not send mail.
  Do not forget about weak referens to self for completionHandler and dismissCompletionHandler blocks.
  */
@@ -618,7 +628,7 @@ LGInternetStatus;
 
 + (BOOL)phoneNumberIsCorrect:(NSString *)string;
 
-/** 
+/**
  Return NO if device can not send text.
  Do not forget about weak referens to self for completionHandler and dismissCompletionHandler blocks.
  */
@@ -685,7 +695,7 @@ presentCompletionHandler:(void(^)())presentCompletionHandler;
 
 #pragma mark - UIDocumentInteractionController
 
-/** 
+/**
  Returns NO if the item could not be previewed.
  Do not forget about weak referens to self for didEndPreviewHandler block.
  */
@@ -713,13 +723,21 @@ presentCompletionHandler:(void(^)())presentCompletionHandler;
                              completionHandler:(void(^)(NSString *activityType, BOOL completed, NSArray *returnedItems, NSError *activityError))completionHandler
                       presentCompletionHandler:(void(^)())presentCompletionHandler;
 
+#pragma mark - Reachability
+
+//+ (Reachability *)reachabilityAddObserver:(id)target selector:(SEL)selector;
+//+ (Reachability *)reachabilityForHostName:(NSString *)hostName addObserver:(id)target selector:(SEL)selector;
+//+ (void)reachability:(Reachability *)reachability removeObserver:(id)target;
+//+ (NetworkStatus)reachabilityStatus;
+//+ (NetworkStatus)reachabilityStatusForHostName:(NSString *)hostName;
+
 #pragma mark - MWPhotoBrowser
 
-// - (void)photoBrowserShow
- 
+//- (void)photoBrowserShow
+
 #pragma mark - Processor
 
-// - (NSUInteger)processorNumberOfCores;
-// - (NSUInteger)processorNumberOfActiveCores;
+//- (NSUInteger)processorNumberOfCores;
+//- (NSUInteger)processorNumberOfActiveCores;
 
 @end
